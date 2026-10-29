@@ -1,5 +1,7 @@
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { sitesPlatform } from '../lib/platform';
+import { SESSION_COOKIE, verifySession } from '../lib/session';
 
 export type ChatGPTUser = {
   userId: string;
@@ -14,11 +16,16 @@ const USER_FULL_NAME_HEADER = "oai-authenticated-user-full-name";
 const USER_FULL_NAME_ENCODING_HEADER =
   "oai-authenticated-user-full-name-encoding";
 const PERCENT_ENCODED_UTF8 = "percent-encoded-utf-8";
-const SIGN_IN_PATH = "/signin-with-chatgpt";
-const SIGN_OUT_PATH = "/signout-with-chatgpt";
+const SIGN_IN_PATH = "/auth/signin";
+const SIGN_OUT_PATH = "/auth/signout";
 const CALLBACK_PATH = "/callback";
 
 export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
+  // Vercel must never trust caller-supplied Sites identity headers.
+  if (!sitesPlatform()) {
+    const jar = await cookies();
+    return verifySession(jar.get(SESSION_COOKIE)?.value, process.env.MFARO_SESSION_SECRET);
+  }
   const requestHeaders = await headers();
   const userId = requestHeaders.get(USER_ID_HEADER);
   const email = requestHeaders.get(USER_EMAIL_HEADER);

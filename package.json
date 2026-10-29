@@ -12,9 +12,12 @@
     "start": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "node --import ./scripts/windows-profile.mjs ./node_modules/drizzle-kit/bin.cjs generate",
-    "test": "node --experimental-strip-types --test tests/trading.test.ts",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
     "test:api": "node tests/api-smoke.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:vercel": "node --import ./scripts/windows-profile.mjs ./node_modules/next/dist/bin/next build --webpack",
+    "dev:vercel": "node --import ./scripts/windows-profile.mjs ./node_modules/next/dist/bin/next dev --webpack",
+    "start:vercel": "node --import ./scripts/windows-profile.mjs ./node_modules/next/dist/bin/next start"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

@@ -56,3 +56,20 @@ On restricted Windows sessions, scripts/windows-profile.mjs supplies a tool-cach
 ## Verification record (28 October 2026)
 
 The initial production build and typecheck passed. The nine Node unit tests pass, and the local database-backed API test covers authenticated persistence, spoofed-header denial, origin/content-type protection, rejected orders, idempotency, modifications, and closures. Production dependencies were patched after the starter audit; `npm audit --omit=dev --audit-level=high` reports zero known vulnerabilities. This does not substitute for a full application security review. The final source includes `npm test`, `npm run test:api`, and `npm run typecheck` commands.
+
+## Vercel deployment (29 October 2026)
+
+The repository supports two separate runtimes. `npm run build` retains the existing Sites/Vinext Cloudflare Worker output in `dist/`. Vercel must use `npm run build:vercel`, which invokes native Next.js and generates `.next/routes-manifest.json`. The checked-in `vercel.json` selects the Next.js framework, that build command, `.next` output, and `npm ci --include=dev --include=optional`. Use repository root `./`; do not set the output to `dist`, `public`, or `out`. The missing routes-manifest error was caused by running the Worker build under Vercel's Next.js preset.
+
+For local Vercel-equivalent verification, run `npm run build:vercel`, then `npm run start:vercel -- --port 3100`. Use `npm run dev:vercel` for native Next development. The existing `npm run dev` and `npm start` remain Cloudflare-specific. Vercel does not require the Sites publishing helper or a Cloudflare Worker build.
+
+The public demo preview and charts render without external credentials. To enable authenticated demo accounts on Vercel, create a GitHub OAuth application and set the following Vercel server environment variables, then redeploy:
+
+- `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`: OAuth app credentials, not a personal access token. Register `https://YOUR-PRODUCTION-DOMAIN/auth/callback` as the callback.
+- `MFARO_PUBLIC_URL`: exact HTTPS production origin (no path). Keep preview deployments unconfigured or use a separate OAuth app matching the preview origin.
+- `MFARO_SESSION_SECRET`: independently generated random secret of at least 32 characters. Rotate to invalidate all Vercel sessions.
+- `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_D1_DATABASE_ID`, `CLOUDFLARE_D1_API_TOKEN`: an existing D1 database and server-only API token with D1 permissions. Apply the checked-in SQL migration once to a NEW database; do not replay it against the already-migrated Sites database. The Sites-managed database credentials are not automatically available to Vercel. A separately provisioned D1 database can be used.
+
+GitHub sign-in uses OAuth state validation and an eight-hour HMAC-signed HttpOnly/Secure/SameSite=Lax cookie. Tokens are used only during the callback and are not persisted. Identity headers supplied by visitors are ignored on Vercel. The Sites Worker establishes request-local trusted context and retains its provider-managed ChatGPT identity and native D1 binding. GitHub user IDs use a separate namespace; accounts are not silently linked or migrated between identity providers.
+
+Missing configuration fails closed: sign-in returns a clear configuration error, protected account APIs reject anonymous access, and an unavailable database never produces a successful trade. Vercel filesystem/in-memory storage is not used for financial state. No real broker keys are needed for this demo and live execution remains disabled. Real GitHub OAuth and remote D1 integration need acceptance testing with the operator's credentials before wider use.
