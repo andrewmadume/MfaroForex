@@ -89,3 +89,9 @@ The separate synthetic practice chart remains available through an explicit togg
 Verification: `npm test` includes provider normalization, cross-rate calculation, stale timestamps, missing credentials, quota errors, invalid OHLC and refusal to fabricate fallback prices. With the native Next server running, `node tests/market-live-smoke.mjs` verifies the actual public API connection and history. The production build is `npm run build:vercel` for Vercel. When switching between native Next and Vinext locally, regenerate native route types with `node node_modules/next/dist/bin/next typegen` before a standalone TypeScript check; their generated `.next/types` files differ.
 
 Provider references: https://frankfurter.dev/ and https://twelvedata.com/docs .
+
+## Dealing desk interface
+
+The Trade screen includes a compact account strip, instrument search and watchlist filter, an instrument ladder with large Sell/Buy prices and simulated spread labels, chart-side quote buttons, and a keyboard-accessible slide-in demo order ticket. Selecting an instrument changes the chart; clicking Sell or Buy sets the correct instrument and direction and opens the ticket. Review and server confirmation remain required before execution.
+
+Motion is limited to staggered row entry, selected-row emphasis, button hover/press feedback, a blue chart trace/area reveal, real reference-observation update highlights, and ticket entry. Fixed training quotes are never randomly animated to imply a live price feed. The interface honors prefers-reduced-motion. Published reference prices retain their own source/date and remain separate from the fixed demo execution model.
