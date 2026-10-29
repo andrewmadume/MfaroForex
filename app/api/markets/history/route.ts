@@ -1,0 +1,3 @@
+import {configuredFeed,cachedFeed,FeedError} from '../../../../lib/market-feed';
+export const dynamic='force-dynamic';
+export async function GET(req:Request){const url=new URL(req.url),symbol=url.searchParams.get('symbol')||'EUR/USD',interval=url.searchParams.get('interval')||'1D';try{const feed=configuredFeed();const history=await cachedFeed(symbol+':'+interval,()=>feed.history(symbol,interval));return Response.json(history,{headers:{'Cache-Control':'public, max-age=0, s-maxage=60','X-Content-Type-Options':'nosniff'}});}catch(e){return Response.json({error:e instanceof FeedError?e.message:'Chart data unavailable.',bars:[]},{status:e instanceof FeedError?e.status:503,headers:{'Cache-Control':'no-store'}});}}

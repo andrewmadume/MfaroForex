@@ -2,6 +2,8 @@
 
 A React + TypeScript trading PWA using Vite/Vinext, a Cloudflare Worker API, Drizzle, and durable D1 storage. This is a controlled demo, not a live trading service. The supplied brief had no logo image; the included symbol and wordmark are temporary brand assets.
 
+The default market view now displays real published daily ECB reference prices and historical observations. Intraday provider integration is optional; all order execution remains simulated. See the real-market-data section below for source, timing and configuration.
+
 ## Local development
 
 Requires Node 22.13+, npm, Git. Run `npm ci`, `npm run db:generate` only after schema edits, then `npm run build`. Apply the checked-in D1 migration once:
@@ -22,7 +24,7 @@ Use the actual migration filename under drizzle if different. Run `npm run dev` 
 - `/api/terminal`: authenticated GET state and POST order/close/modify/watchlist/preferences operations.
 - `/manifest.webmanifest`, `/sw.js`, `/offline.html`: install metadata and safe offline fallback.
 
-The custom SVG chart offers candles, UTC timeframes, zoom, pan, crosshair, synthetic volume, SMA20, RSI14, MACD12/26 and Bollinger Bands. This is an exploratory demo implementation, not a certified analytical or execution engine. Rates and candles are deterministic synthetic examples, not historical observations or a live feed. Pending orders and protective levels are stored but never triggered automatically. All demo commission and swap are zero and identified as such.
+The optional synthetic practice chart offers candles, UTC timeframes, zoom, pan, crosshair, synthetic volume, SMA20, RSI14, MACD12/26 and Bollinger Bands. This is an exploratory demo implementation, not a certified analytical or execution engine. Rates and candles in that optional practice view are deterministic synthetic examples, not historical observations or a live feed. Pending orders and protective levels are stored but never triggered automatically. All demo commission and swap are zero and identified as such.
 
 ## Persistence and authentication
 
@@ -73,3 +75,17 @@ The public demo preview and charts render without external credentials. To enabl
 GitHub sign-in uses OAuth state validation and an eight-hour HMAC-signed HttpOnly/Secure/SameSite=Lax cookie. Tokens are used only during the callback and are not persisted. Identity headers supplied by visitors are ignored on Vercel. The Sites Worker establishes request-local trusted context and retains its provider-managed ChatGPT identity and native D1 binding. GitHub user IDs use a separate namespace; accounts are not silently linked or migrated between identity providers.
 
 Missing configuration fails closed: sign-in returns a clear configuration error, protected account APIs reject anonymous access, and an unavailable database never produces a successful trade. Vercel filesystem/in-memory storage is not used for financial state. No real broker keys are needed for this demo and live execution remains disabled. Real GitHub OAuth and remote D1 integration need acceptance testing with the operator's credentials before wider use.
+
+## Real forex prices and charts (29 October 2026)
+
+Market data is now separate from the simulated broker ledger. The default `FOREX_PROVIDER=frankfurter` uses Frankfurter v2's European Central Bank provider endpoint over HTTPS. It needs no key. All seven supported pairs are derived from matching-date EUR reference observations, including USD/ZAR and EUR/ZAR. The market list, watchlist prices, and default chart display actual published observations with source and price date. Daily percentage change compares the last two published observations. Reference data is delayed daily data, not live trading prices, executable bid/ask, or spreads. The reference chart is a line chart; OHLC candles and volume are never invented from daily reference values. Observations older than five calendar days are flagged stale.
+
+For intraday indicative quotes and genuine OHLC candles, set `FOREX_PROVIDER=twelvedata` and `TWELVE_DATA_API_KEY` as a server-only Vercel environment variable, then redeploy. Your provider plan must cover the requested currency pairs and intervals, credits, and any public display/redistribution rights. Coverage, delay and permitted usage must be verified with the provider. The app supports 1m, 5m, 15m, 30m, 1h, 4h, 1D and 1W when that provider is selected. Quotes and history are polled once per minute; this is not a tick stream. The quote endpoint supplies indicative last prices, not executable broker bid/ask. No paid plan is purchased or provisioned by this source change. The Twelve Data integration has fixture-based tests; acceptance with a real API key remains necessary.
+
+Public endpoints: `GET /api/markets` returns real quote metadata; `GET /api/markets/history?symbol=EUR%2FUSD&interval=1D` returns timestamped history. Requests are bounded to the instrument/interval allowlist. Public market results are cached for up to 60 seconds; account and order responses remain no-store. Provider outages, quota errors, plan rejection and malformed data produce explicit errors with no synthetic fallback. The UI preserves a previously fetched chart only with a connection-error notice; it does not relabel that chart as fresh.
+
+The separate synthetic practice chart remains available through an explicit toggle. Demo ticket quotes, balances, margin, conversion rates and position P&L remain the original fixed training model. The ticket warns that these quotes are unrelated to real market observations. Orders never execute against the public data feed. Real-money execution remains disabled.
+
+Verification: `npm test` includes provider normalization, cross-rate calculation, stale timestamps, missing credentials, quota errors, invalid OHLC and refusal to fabricate fallback prices. With the native Next server running, `node tests/market-live-smoke.mjs` verifies the actual public API connection and history. The production build is `npm run build:vercel` for Vercel. When switching between native Next and Vinext locally, regenerate native route types with `node node_modules/next/dist/bin/next typegen` before a standalone TypeScript check; their generated `.next/types` files differ.
+
+Provider references: https://frankfurter.dev/ and https://twelvedata.com/docs .
