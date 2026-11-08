@@ -1,6 +1,6 @@
 'use client';
 import {useState} from 'react';
-import {Search,Star,ArrowDownLeft,ArrowUpRight,SlidersHorizontal,ShieldCheck} from 'lucide-react';
+import {Search,Star,ArrowDownLeft,ArrowUpRight,ShieldCheck} from 'lucide-react';
 import {markets,price,type Side,type SymbolCode} from '../lib/trading';
 import type {FeedQuote} from '../lib/market-types';
 export function QuotePrice({value,symbol}:{value:number;symbol:string}){

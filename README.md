@@ -14,7 +14,7 @@ node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1
 
 Use the actual migration filename under drizzle if different. Run `npm run dev` and open its localhost URL. The starter's local-only authentication emulator is available at `/signin-with-chatgpt?return_to=/`. Hosted identity is managed by ChatGPT, never by this emulator. `npm start` previews the production Worker; hosted sign-in is not emulated there.
 
-`node --experimental-strip-types --test tests/trading.test.ts` runs financial and PWA tests. `npx tsc --noEmit` typechecks. The API integration test requires an authenticated local preview; see tests/api-smoke.mjs.
+`node --experimental-strip-types --test tests/trading.test.ts` runs financial and PWA tests. `npm run typecheck` refreshes Next route declarations and typechecks. This avoids mixed generated types after switching between Vinext and Next builds. The API integration test requires an authenticated local preview; see tests/api-smoke.mjs.
 
 ## Routes and implementation
 

@@ -9,3 +9,15 @@ test('old daily observations are marked stale rather than live',async()=>{const 
 test('provider failure never falls back to simulated prices',async()=>{for(const request of [(async()=>{throw new Error('connection failed with private URL');}),(async()=>Response.json({error:'provider down'},{status:503})),(async()=>Response.json([]))]){const feed=createMarketFeed({request:request as typeof fetch});await assert.rejects(()=>feed.snapshot(),e=>e instanceof FeedError);}});
 test('Twelve Data requires a server credential and handles quota errors safely',async()=>{assert.throws(()=>createMarketFeed({provider:'twelvedata'}),/TWELVE_DATA_API_KEY/);const feed=createMarketFeed({provider:'twelvedata',key:'test-only-private-key',request:(async()=>Response.json({code:429,status:'error',message:'secret provider detail'})) as typeof fetch});await assert.rejects(()=>feed.snapshot(),e=>e instanceof FeedError&&e.status===429&&!e.message.includes('secret'));});
 test('OHLC bars are genuine validated provider values; missing volume is omitted',()=>{const values=[{datetime:'2026-10-28 12:00:00',open:'1.1',high:'1.12',low:'1.09',close:'1.11'},{datetime:'2026-10-28 13:00:00',open:'1.11',high:'1.13',low:'1.1',close:'1.12'}];const bars=candleSeries(values);assert.equal(bars[0].time,Date.UTC(2026,9,28,12));assert.equal(bars[0].volume,undefined);assert.throws(()=>candleSeries([{...values[0],high:'1.0'},values[1]]));assert.throws(()=>candleSeries([values[0],values[0]]));});
+
+test('malformed provider records are rejected as feed errors',async()=>{
+ for(const payload of [[null], [42], [{date:'2026-10-28',base:'EUR',rate:1.1}]]){
+  const feed=createMarketFeed({request:(async()=>Response.json(payload)) as typeof fetch});
+  await assert.rejects(()=>feed.snapshot(),error=>error instanceof FeedError);
+ }
+ for(const payload of [null, [], {'EUR/USD':42}]){
+  const feed=createMarketFeed({provider:'twelvedata',key:'test-key',request:(async()=>Response.json(payload)) as typeof fetch});
+  await assert.rejects(()=>feed.snapshot(),error=>error instanceof FeedError);
+ }
+ assert.throws(()=>candleSeries([null,null]),error=>error instanceof FeedError);
+});
