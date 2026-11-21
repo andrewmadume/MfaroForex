@@ -1,10 +1,11 @@
+import { securityHeaders } from '../lib/security-headers';
 import handler from "vinext/server/fetch-handler";
 import { runWithConnectorBinding } from "../lib/connector-context";
 import type { ConnectorBinding } from "../lib/connector-contract.mjs";
 import { withSitesPlatform } from '../lib/platform';
 
 const worker = {
-  fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext<{ CONNECTORS?: ConnectorBinding }>) {
+  async fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext<{ CONNECTORS?: ConnectorBinding }>) {
     let binding = ctx.props?.CONNECTORS;
     // Local preview emulates the same request-scoped capability. This branch and
     // the auxiliary service binding are absent from production builds.
@@ -24,7 +25,10 @@ const worker = {
         },
       };
     }
-    return withSitesPlatform(env.DB, () => runWithConnectorBinding(binding, () => handler.fetch(request, env, ctx)));
+    const response = await withSitesPlatform(env.DB, () => runWithConnectorBinding(binding, () => handler.fetch(request, env, ctx)));
+    const headers = new Headers(response.headers);
+    for (const [key,value] of Object.entries(securityHeaders(true, import.meta.env.DEV))) headers.set(key,value);
+    return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
   },
 };
 

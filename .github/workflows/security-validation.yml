@@ -1,0 +1,49 @@
+name: Security validation
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --include=dev --include=optional --no-fund
+      - name: Refresh compatible dependencies
+        if: github.head_ref == 'security-hardening-2026-11-21' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          node scripts/update-security-dependencies.mjs
+          npm install --include=dev --include=optional --no-fund
+          npm audit fix --no-fund
+      - run: npm run lint -- --max-warnings 0
+      - run: npm test
+      - run: npm run db:generate
+      - run: npm run build:vercel
+      - run: node tests/native-security-smoke.mjs
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm audit --audit-level=low
+      - name: Save tested dependency versions
+        if: github.head_ref == 'security-hardening-2026-11-21' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/commit-tested-dependencies.mjs

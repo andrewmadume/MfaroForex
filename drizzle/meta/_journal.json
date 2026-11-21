@@ -8,6 +8,13 @@
       "when": 1793185762641,
       "tag": "0000_fat_chimera",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1795290864101,
+      "tag": "0001_eager_christian_walker",
+      "breakpoints": true
     }
   ]
 }

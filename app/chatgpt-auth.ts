@@ -1,7 +1,8 @@
 import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { sitesPlatform } from '../lib/platform';
-import { SESSION_COOKIE, verifySession } from '../lib/session';
+import { SESSION_COOKIE } from '../lib/session';
+import { activeSession } from '../lib/active-sessions';
 
 export type ChatGPTUser = {
   userId: string;
@@ -24,7 +25,7 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
   // Vercel must never trust caller-supplied Sites identity headers.
   if (!sitesPlatform()) {
     const jar = await cookies();
-    return verifySession(jar.get(SESSION_COOKIE)?.value, process.env.MFARO_SESSION_SECRET);
+    return activeSession(jar.get(SESSION_COOKIE)?.value, process.env.MFARO_SESSION_SECRET);
   }
   const requestHeaders = await headers();
   const userId = requestHeaders.get(USER_ID_HEADER);

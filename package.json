@@ -17,7 +17,8 @@
     "typecheck": "node scripts/typecheck.mjs",
     "build:vercel": "node --import ./scripts/windows-profile.mjs ./node_modules/next/dist/bin/next build --webpack",
     "dev:vercel": "node --import ./scripts/windows-profile.mjs ./node_modules/next/dist/bin/next dev --webpack",
-    "start:vercel": "node --import ./scripts/windows-profile.mjs ./node_modules/next/dist/bin/next start"
+    "start:vercel": "node --import ./scripts/windows-profile.mjs ./node_modules/next/dist/bin/next start",
+    "test:security": "node tests/native-security-smoke.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
