@@ -1,12 +1,10 @@
-import type { ComponentProps } from 'react';
+import type { ReactNode } from 'react';
 
-const paths = { signin: '/auth/signin', signout: '/auth/signout' } as const;
-type AuthLinkProps = Omit<ComponentProps<'a'>, 'href' | 'target'> & {
-  action: keyof typeof paths;
-};
-
-// Auth endpoints set cookies and redirect outside the app. Always use a full
-// top-level navigation rather than Next's client navigation or prefetching.
-export default function AuthLink({ action, ...props }: AuthLinkProps) {
-  return <a {...props} href={paths[action]} target="_top" />;
+type Props={action:'signin'|'signout';children:ReactNode;className?:string};
+// Full navigation keeps identity-provider redirects out of client-side routing.
+// Sign-out changes server state and must be an origin-checked POST.
+export default function AuthLink({action,children,className}:Props){
+ if(action==='signout')return <form method="post" action="/auth/signout" target="_top"><button type="submit" className={className}>{children}</button></form>;
+ const href='/auth/signin';
+ return <a href={href} target="_top" className={className}>{children}</a>;
 }

@@ -1,23 +1,21 @@
+import {validRequestOrigin} from '../../../lib/request-origin';
 import { cookies } from 'next/headers';
 import { sitesPlatform } from '../../../lib/platform';
-import { signSession, SESSION_COOKIE } from '../../../lib/session';
+import { SESSION_COOKIE } from '../../../lib/session';
+import { createActiveSession, revokeSession } from '../../../lib/active-sessions';
 export const dynamic='force-dynamic';
 const noStore={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
 const fail=(message:string,status=503)=>Response.json({error:message},{status,headers:noStore});
 export async function GET(req:Request,{params}:{params:Promise<{action:string}>}) {
  const {action}=await params;
+ if(action==='signout')return new Response(null,{status:405,headers:{...noStore,Allow:'POST'}});
  if(sitesPlatform()) {
   if(!['signin','signout'].includes(action))return fail('Unknown authentication action.',404);
   return Response.redirect(new URL(`/${action==='signin'?'signin':'signout'}-with-chatgpt?return_to=/`,req.url));
  }
  const jar=await cookies();
  const options={httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax' as const,path:'/'};
- if(action==='signout') {
-  const source=req.headers.get('sec-fetch-site');
-  if(source&&source!=='same-origin'&&source!=='none')return fail('Cross-site sign-out denied.',403);
-  jar.set(SESSION_COOKIE,'',{...options,maxAge:0});
-  return new Response(null,{status:303,headers:{...noStore,Location:'/'}});
- }
+
  const {GITHUB_CLIENT_ID,GITHUB_CLIENT_SECRET,MFARO_SESSION_SECRET,MFARO_PUBLIC_URL}=process.env;
  if(!GITHUB_CLIENT_ID||!GITHUB_CLIENT_SECRET||!MFARO_SESSION_SECRET||MFARO_SESSION_SECRET.length<32||!MFARO_PUBLIC_URL)return fail('Vercel sign-in is not configured. Set GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, MFARO_SESSION_SECRET (32+ characters), and MFARO_PUBLIC_URL in Vercel Environment Variables. The public demo preview remains available at /.');
  let origin:string;
@@ -45,7 +43,18 @@ export async function GET(req:Request,{params}:{params:Promise<{action:string}>}
   let email=profile.email;
   if(!email){const emails=await fetch('https://api.github.com/user/emails',{headers,cache:'no-store',signal:AbortSignal.timeout(15000)});if(emails.ok){const list=await emails.json() as {email:string;primary:boolean;verified:boolean}[];email=list.find(e=>e.primary&&e.verified)?.email;}}
   const user={userId:`github:${profile.id}`,email:email||`${profile.id}+${profile.login}@users.noreply.github.com`,displayName:profile.name||profile.login,fullName:profile.name||null};
-  jar.set(SESSION_COOKIE,await signSession(user,MFARO_SESSION_SECRET),{...options,maxAge:28800});
+  jar.set(SESSION_COOKIE,await createActiveSession(user,MFARO_SESSION_SECRET),{...options,maxAge:28800});
   return new Response(null,{status:303,headers:{...noStore,Location:origin+'/'}});
  }catch{return fail('Identity provider unavailable. No session was created.');}
+}
+
+export async function POST(req:Request,{params}:{params:Promise<{action:string}>}) {
+ const {action}=await params;
+ if(action!=='signout')return fail('Unknown authentication action.',404);
+ if(!validRequestOrigin(req))return fail('Cross-site sign-out denied.',403);
+ if(sitesPlatform())return new Response(null,{status:303,headers:{...noStore,Location:new URL('/signout-with-chatgpt?return_to=/',req.url).href}});
+ const jar=await cookies();
+ try{await revokeSession(jar.get(SESSION_COOKIE)?.value,process.env.MFARO_SESSION_SECRET);}catch{return fail('Sign-out could not be confirmed. Please retry.');}
+ jar.set(SESSION_COOKIE,'',{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/',maxAge:0});
+ return new Response(null,{status:303,headers:{...noStore,Location:'/'}});
 }

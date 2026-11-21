@@ -21,11 +21,14 @@ export function restDatabase(accountId:string,databaseId:string,token:string,req
     return statement();
   }};
 }
+let sharedRest:{key:string;database:Database}|undefined;
 export function getAccountDatabase():Database|undefined {
   const platform=sitesPlatform();
   if(platform)return platform.database as Database|undefined;
   const {CLOUDFLARE_ACCOUNT_ID,CLOUDFLARE_D1_DATABASE_ID,CLOUDFLARE_D1_API_TOKEN}=process.env;
   if(!CLOUDFLARE_ACCOUNT_ID||!CLOUDFLARE_D1_DATABASE_ID||!CLOUDFLARE_D1_API_TOKEN)return undefined;
-  return restDatabase(CLOUDFLARE_ACCOUNT_ID,CLOUDFLARE_D1_DATABASE_ID,CLOUDFLARE_D1_API_TOKEN);
+  const key=[CLOUDFLARE_ACCOUNT_ID,CLOUDFLARE_D1_DATABASE_ID,CLOUDFLARE_D1_API_TOKEN].join(':');
+  if(!sharedRest||sharedRest.key!==key)sharedRest={key,database:restDatabase(CLOUDFLARE_ACCOUNT_ID,CLOUDFLARE_D1_DATABASE_ID,CLOUDFLARE_D1_API_TOKEN)};
+  return sharedRest.database;
 }
 
