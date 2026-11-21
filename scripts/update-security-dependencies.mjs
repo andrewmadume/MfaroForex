@@ -32,6 +32,8 @@ for(const [name,value] of Object.entries(pkg.overrides||{})){
 // Deprecated esbuild-kit still pulls esbuild 0.18. Its transform API is exercised
 // by db:generate in validation; narrow the override to this one legacy parent.
 pkg.overrides['@esbuild-kit/core-utils']={esbuild:'^0.25.12'};
+// Satori's pinned ZIP parser has a malformed ZIP64 denial-of-service fix.
+pkg.overrides.satori={fflate:'0.7.5'};
 await writeFile(path,JSON.stringify(pkg,null,2)+'\n');
 await writeFile(new URL('../dependency-updates.json',import.meta.url),JSON.stringify(updates,null,2)+'\n');
 console.log(JSON.stringify(updates,null,2));
