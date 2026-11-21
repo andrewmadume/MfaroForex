@@ -28,7 +28,7 @@ try{
  assert.equal((await get()).status,200);assert.equal((await get(1)).status,200);
  assert.equal((await fetch(origin+'/api/terminal',{headers:{'oai-authenticated-user-id':'github:1','oai-authenticated-user-email':'forged@example.invalid'}})).status,401);
  const order={symbol:'EUR/USD',side:'buy',type:'Market',lots:.01,key:crypto.randomUUID()};
- assert.equal((await post({action:'order',order:{...order,pnl:999999999}})).status,400);
+ const rejected=await post({action:'order',order:{...order,pnl:999999999}});assert.equal(rejected.status,400,JSON.stringify(rejected));
  assert.equal((await post({action:'order',order:{...order,exit:{invalid:true}}})).status,400);
  const created=await post({action:'order',order});assert.equal(created.status,200,JSON.stringify(created));
  assert.equal((await post({action:'order',order})).state.positions.length,1);

@@ -98,3 +98,12 @@ test('headers deny framing on Vercel while preserving trusted Sites embedding', 
   assert.match(embedded['Content-Security-Policy'],/https:\/\/chatgpt.com/);
   assert.equal(embedded['X-Frame-Options'],undefined);
 });
+
+ test('canonical origins survive proxy normalization and reject cross-site requests',async()=>{
+ const {validRequestOrigin}=await import('../lib/request-origin.ts');
+ const request=(origin:string)=>new Request('http://localhost:3100/api/terminal',{headers:{origin}});
+ assert.equal(validRequestOrigin(request('https://app.example'),'https://app.example'),true);
+ assert.equal(validRequestOrigin(request('https://evil.example'),'https://app.example'),false);
+ assert.equal(validRequestOrigin(request('null'),'https://app.example'),false);
+ assert.equal(validRequestOrigin(request('https://evil.example'),'invalid'),false);
+ });

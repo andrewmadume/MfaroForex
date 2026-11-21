@@ -1,3 +1,4 @@
+import {validRequestOrigin} from '../../../lib/request-origin';
 import { cookies } from 'next/headers';
 import { sitesPlatform } from '../../../lib/platform';
 import { SESSION_COOKIE } from '../../../lib/session';
@@ -50,7 +51,7 @@ export async function GET(req:Request,{params}:{params:Promise<{action:string}>}
 export async function POST(req:Request,{params}:{params:Promise<{action:string}>}) {
  const {action}=await params;
  if(action!=='signout')return fail('Unknown authentication action.',404);
- if(req.headers.get('origin')!==new URL(req.url).origin)return fail('Cross-site sign-out denied.',403);
+ if(!validRequestOrigin(req))return fail('Cross-site sign-out denied.',403);
  if(sitesPlatform())return new Response(null,{status:303,headers:{...noStore,Location:new URL('/signout-with-chatgpt?return_to=/',req.url).href}});
  const jar=await cookies();
  try{await revokeSession(jar.get(SESSION_COOKIE)?.value,process.env.MFARO_SESSION_SECRET);}catch{return fail('Sign-out could not be confirmed. Please retry.');}

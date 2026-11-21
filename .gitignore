@@ -47,3 +47,5 @@ yarn-error.log*
 
 # Dependency refresh report emitted by CI
 /dependency-updates.json
+
+/security-audit.json

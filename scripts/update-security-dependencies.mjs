@@ -14,7 +14,7 @@ async function refresh(name,current){
  const response=await fetch('https://registry.npmjs.org/'+encodeURIComponent(name),{signal:AbortSignal.timeout(30000)});
  if(!response.ok)throw new Error('Cannot read registry metadata for '+name);
  const meta=await response.json();
- const candidates=Object.keys(meta.versions).filter(version=>{const p=parts(version);return p&&p[0]===major&&(major!==0||p[1]===minor)&&compare(version,base)>=0;});
+ const candidates=Object.keys(meta.versions).filter(version=>{const p=parts(version);return p&&(name==='@cloudflare/workers-types'?p[0]===5:p[0]===major&&(major!==0||p[1]===minor))&&compare(version,base)>=0;});
  if(!candidates.length)return current; // Preserve an existing prerelease if no stable candidate exists.
  const selected=candidates.sort(compare).at(-1);
  if(current!==selected)updates.push({name,from:current,to:selected});

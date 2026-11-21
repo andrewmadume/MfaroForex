@@ -33,6 +33,19 @@ jobs:
           node scripts/update-security-dependencies.mjs
           npm install --include=dev --include=optional --no-fund
           npm audit fix --no-fund
+      - name: Record dependency audit
+        if: always()
+        run: npm audit --json > security-audit.json || true
+      - name: Preserve dependency reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: dependency-security-reports
+          path: |
+            package.json
+            package-lock.json
+            dependency-updates.json
+            security-audit.json
       - run: npm run lint -- --max-warnings 0
       - run: npm test
       - run: npm run db:generate
